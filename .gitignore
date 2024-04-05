@@ -1,0 +1,6 @@
+
+*.pyc
+store/*
+session.txt
+gif_sender.gif
+config.py

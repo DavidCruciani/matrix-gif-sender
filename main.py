@@ -27,17 +27,24 @@ def get_gif(searchTerm):
         response = requests.get(f"https://g.tenor.com/v1/random?q={searchTerm}&key={Config.TENOR_API_KEY}&limit=1")
         data = response.json()
         
-        uri = data['results'][0]['media'][0]['gif']['url']
+        if data["results"]:
+            uri = data['results'][0]['media'][0]['gif']['url']
+        else:
+            return False
     else:
         response = requests.get(f"https://tenor.googleapis.com/v2/search?q={searchTerm}&key={Config.TENOR_API_KEY}&client_key={Config.TENOR_CLIENT_KEY}&limit={limit}")
         data = json.loads(response.content)
         
         # see urls for all GIFs
-        gif = random.choice(data['results'])
-        uri = gif["media_formats"]["gif"]["url"]
-
+        if data["results"]:
+            gif = random.choice(data['results'])
+            uri = gif["media_formats"]["gif"]["url"]
+        else:
+            return False
+        
     with open(image_filepath, "wb") as f:
         f.write(requests.get(uri).content)
+    return True
     
 
 @bot.listener.on_message_event
@@ -47,7 +54,9 @@ async def gif_sender(room, message):
 
     if match.prefix():
         if match.command("gif"):
-            get_gif(" ".join(arg for arg in match.args()))
-            await bot.api.send_image_message(room.room_id, image_filepath)
+            if get_gif(" ".join(arg for arg in match.args())):
+                await bot.api.send_image_message(room.room_id, image_filepath)
+            else:
+                await bot.api.send_text_message(room.room_id, "Gif not found... Sorry", reply_to=message.event_id)
 
 bot.run()
